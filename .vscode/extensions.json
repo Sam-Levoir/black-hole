@@ -1,7 +1,16 @@
 {
     "recommendations": [
-        "njpwerner.autodocstring",
-        "streetsidesoftware.code-spell-checker",
-        "ms-python.python"
+        // This is the microsoft VS code extension for general error checking, coloring, debugging, etc. If you don't have this, what are you doing?
+        "ms-python.python",
+
+        // Linter:
+        "ms-python.vscode-pylance",
+
+        // Formatting:
+        "ms-python.black-formatter",
+
+        // QOL:
+        "njpwerner.autodocstring", // Used to auto generate docstrings.
+        "streetsidesoftware.code-spell-checker", // Spell check!
     ]
 }
