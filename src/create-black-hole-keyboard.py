@@ -11,11 +11,16 @@ Created by Sam Levoir - April 2024
 
 import math
 import os
-from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude
+from typing import Optional
+from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude, union
+
+from models.column import Column
 
 # region Configurable Constants:
-radius_for_key_hole_curvature = 50
-angle_between_key_holes = 15
+pointer_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-5, x_offset=0)
+middle_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=20)
+ring_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=40)
+pinky_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=8, x_offset=60)
 # endregion Configurable Constants
 
 # region Constants Which Should Probably Be Left Alone:
@@ -26,12 +31,13 @@ key_hole_rim_thickness = 3  # Should be just enough to hold the switch and no mo
 # endregion Constants Which Should Probably Be Left Alone
 
 # region Calculated Constants:
+columns = [pointer_finger_column, middle_finger_column, ring_finger_column, pinky_finger_column]
 key_hole_outer_width = key_hole_inner_width + (2 * key_hole_rim_thickness)  # 1 rim thickness on each side of the hole.
 # endregion CCalculated Constants
 
 
 def main():
-    black_hole_keyboard: shape = make_plate_strip(3)
+    black_hole_keyboard: shape = make_plate_strip()
 
     # https://stackoverflow.com/questions/5137497/find-the-current-directory-and-files-directory
     this_files_dir = os.path.dirname(os.path.realpath(__file__))
@@ -39,15 +45,34 @@ def main():
     scad_render_to_file(black_hole_keyboard, output_file_path)
 
 
-def make_plate_strip(key_count: int) -> shape:
+def make_half() -> shape:
+    plate_strips: shape | None = None
+    for column in columns:
+        plate_strip = make_plate_strip(column)
+        plate_strip = rotate((0, column.splay_angle, 0))(plate_strip)
+        plate_strip = translate((column.x_offset, 0, 0))(plate_strip)
+
+        if plate_strips is None:
+            plate_strips = plate_strip
+        else:
+            plate_strips += plate_strip
+
+    # This will only ever be None if there are no columns defined, which ruins the whole point of a keyboard anyways.
+    return plate_strip  # type: ignore
+
+
+def make_plate_strip(column: Column) -> shape:
     # Make a keyhole, translate and rotate it into position.
     # Make another keyhole, join it to existing keyhole(s), translate and rotate whole thing into position.
     # Rinse repeat.
     plate_strip: shape | None = None
-    for _ in range(key_count):
+    for _ in range(column.key_count):
         key_hole = make_key_hole()
 
         if plate_strip:
+            radius_for_key_hole_curvature = column.radius_for_key_hole_curvature
+            angle_between_key_holes = column.angle_between_key_holes
+
             # There is an existing plate strip (of aggregated key holes) to add onto.
             # First, make a curved strip to join this new key hole to the existing ones.
             plate_face = square((plate_height, key_hole_outer_width))
