@@ -11,8 +11,7 @@ Created by Sam Levoir - April 2024
 
 import math
 import os
-from typing import Optional
-from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude, union
+from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude
 
 from models.column import Column
 
@@ -37,7 +36,7 @@ key_hole_outer_width = key_hole_inner_width + (2 * key_hole_rim_thickness)  # 1 
 
 
 def main():
-    black_hole_keyboard: shape = make_plate_strip()
+    black_hole_keyboard: shape = make_half()
 
     # https://stackoverflow.com/questions/5137497/find-the-current-directory-and-files-directory
     this_files_dir = os.path.dirname(os.path.realpath(__file__))
