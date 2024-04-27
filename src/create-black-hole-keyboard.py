@@ -16,10 +16,10 @@ from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file,
 from models.column import Column
 
 # region Configurable Constants:
-pointer_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-5, x_offset=0)
-middle_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=20)
-ring_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=40)
-pinky_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=8, x_offset=60)
+pointer_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=5, x_offset=0)
+middle_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=25)
+ring_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-4, x_offset=50)
+pinky_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-8, x_offset=75)
 # endregion Configurable Constants
 
 # region Constants Which Should Probably Be Left Alone:
@@ -48,7 +48,7 @@ def make_half() -> shape:
     plate_strips: shape | None = None
     for column in columns:
         plate_strip = make_plate_strip(column)
-        plate_strip = rotate((0, column.splay_angle, 0))(plate_strip)
+        plate_strip = rotate((0, 0, column.splay_angle))(plate_strip)
         plate_strip = translate((column.x_offset, 0, 0))(plate_strip)
 
         if plate_strips is None:
@@ -57,7 +57,7 @@ def make_half() -> shape:
             plate_strips += plate_strip
 
     # This will only ever be None if there are no columns defined, which ruins the whole point of a keyboard anyways.
-    return plate_strip  # type: ignore
+    return plate_strips  # type: ignore
 
 
 def make_plate_strip(column: Column) -> shape:
