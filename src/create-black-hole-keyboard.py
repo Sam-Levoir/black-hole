@@ -11,15 +11,18 @@ Created by Sam Levoir - April 2024
 
 import math
 import os
-from solid import OpenSCADObject as shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude
+from solid import OpenSCADObject as Shape, cube, translate, scad_render_to_file, rotate, square, rotate_extrude
 
 from models.column import Column
+from models.thumb_cluster import ThumbCluster
 
 # region Configurable Constants:
-pointer_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=5, x_offset=0)
-middle_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=0, x_offset=25)
-ring_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-4, x_offset=50)
-pinky_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, splay_angle=-8, x_offset=75)
+pointer_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, rotation=(0, 10, 5), translation=(0, 0, 20))
+middle_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, rotation=(0, 10, 0), translation=(25, 0, 15))
+ring_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, rotation=(0, 10, -4), translation=(50, 0, 10))
+pinky_finger_column = Column(key_count=3, angle_between_key_holes=10, radius_for_key_hole_curvature=10, rotation=(0, 10, -8), translation=(75, 0, 5))
+
+thumb_cluster = ThumbCluster(key_count=3, key_hole_splay_radius=3, rotation=(0, 0, 0), translation=(0, 0, 0))
 # endregion Configurable Constants
 
 # region Constants Which Should Probably Be Left Alone:
@@ -27,6 +30,7 @@ segments = 180  # How round things are. Could be messed with, but no real need f
 plate_height = 1.5  # Has to be 1.5mm for switches to snap in. Do not change! https://matt3o.com/anatomy-of-a-keyboard/.
 key_hole_inner_width = 13.6  # 13.6mm is best by test. I tried a range from 13 - 15. The default is 14: https://matt3o.com/anatomy-of-a-keyboard/.
 key_hole_rim_thickness = 3  # Should be just enough to hold the switch and no more.
+minimum_radial_distance_between_thumb_cluster_keys = 2  # Any less than this, and the keys will hit each other when pressed.
 # endregion Constants Which Should Probably Be Left Alone
 
 # region Calculated Constants:
@@ -36,35 +40,38 @@ key_hole_outer_width = key_hole_inner_width + (2 * key_hole_rim_thickness)  # 1 
 
 
 def main():
-    black_hole_keyboard: shape = make_half()
+    half: Shape = make_half()
 
     # https://stackoverflow.com/questions/5137497/find-the-current-directory-and-files-directory
     this_files_dir = os.path.dirname(os.path.realpath(__file__))
     output_file_path = os.path.join(this_files_dir, "..", "things", "black-hole.scad")
-    scad_render_to_file(black_hole_keyboard, output_file_path)
+    scad_render_to_file(half, output_file_path)
 
 
-def make_half() -> shape:
-    plate_strips: shape | None = None
+def make_half() -> Shape:
+    half: Shape | None = None
     for column in columns:
         plate_strip = make_plate_strip(column)
-        plate_strip = rotate((0, 0, column.splay_angle))(plate_strip)
-        plate_strip = translate((column.x_offset, 0, 0))(plate_strip)
+        plate_strip = rotate(column.rotation)(plate_strip)
+        plate_strip = translate(column.translation)(plate_strip)
 
-        if plate_strips is None:
-            plate_strips = plate_strip
+        if half is None:
+            half = plate_strip
         else:
-            plate_strips += plate_strip
+            half += plate_strip
 
+    thumb_plate_arc = make_thumb_plate_arc(thumb_cluster)
     # This will only ever be None if there are no columns defined, which ruins the whole point of a keyboard anyways.
-    return plate_strips  # type: ignore
+    half += thumb_plate_arc  # type: ignore
+
+    return half  # type: ignore
 
 
-def make_plate_strip(column: Column) -> shape:
+def make_plate_strip(column: Column) -> Shape:
     # Make a keyhole, translate and rotate it into position.
     # Make another keyhole, join it to existing keyhole(s), translate and rotate whole thing into position.
     # Rinse repeat.
-    plate_strip: shape | None = None
+    plate_strip: Shape | None = None
     for _ in range(column.key_count):
         key_hole = make_key_hole()
 
@@ -103,7 +110,19 @@ def make_plate_strip(column: Column) -> shape:
     return plate_strip  # type: ignore
 
 
-def make_key_hole() -> shape:
+def make_thumb_plate_arc(thumb_cluster: ThumbCluster) -> Shape:
+    splay_radius = thumb_cluster.key_hole_splay_radius
+    angle_between_thumb_holes = (180 * minimum_radial_distance_between_thumb_cluster_keys) / (math.pi * splay_radius)
+    print(angle_between_thumb_holes)
+
+    plate_face = square((key_hole_outer_width, plate_height))
+    plate_face = translate((splay_radius, 0, 0))(plate_face)
+    thumb_plate_arc = rotate_extrude(angle_between_thumb_holes, segments=segments)(plate_face)
+
+    return thumb_plate_arc
+
+
+def make_key_hole() -> Shape:
     outer_cube = cube([key_hole_outer_width, key_hole_outer_width, plate_height])
     inner_cube = cube([key_hole_inner_width, key_hole_inner_width, plate_height])
 
