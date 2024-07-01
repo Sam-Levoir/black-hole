@@ -9,8 +9,8 @@ class ThumbCluster(Moveable):
     """
 
     def __init__(
-        self, *, key_count: int, key_hole_splay_radius: float, rotation: tuple[float, float, float], translation: tuple[float, float, float]
+        self, *, key_count: int, arc_inner_radius: float, rotation: tuple[float, float, float], translation: tuple[float, float, float]
     ) -> None:
         super().__init__(rotation=rotation, translation=translation)
         self.key_count = key_count
-        self.key_hole_splay_radius = key_hole_splay_radius
+        self.arc_inner_radius = arc_inner_radius
